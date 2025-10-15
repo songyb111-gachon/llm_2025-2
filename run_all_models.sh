@@ -67,8 +67,8 @@ do
             --num_samples $NUM_SAMPLES \
             --use_existing_suffix \
             --output_file "$OUTPUT_FILE" \
-            --device cuda \
-            2>&1 | tee "$LOG_FILE"
+            --log_file "$LOG_FILE" \
+            --device cuda
     else
         # 새로운 suffix 생성 (느림)
         python simple_gcg_attack.py \
@@ -76,8 +76,8 @@ do
             --num_samples $NUM_SAMPLES \
             --num_steps 250 \
             --output_file "$OUTPUT_FILE" \
-            --device cuda \
-            2>&1 | tee "$LOG_FILE"
+            --log_file "$LOG_FILE" \
+            --device cuda
     fi
     
     # 결과 확인

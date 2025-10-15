@@ -24,8 +24,32 @@ RECOMMENDED_MODELS = {
         "tiiuae/falcon-7b",               # 7B - GPU 메모리 많이 필요
         "mosaicml/mpt-7b",                # 7B
         "EleutherAI/pythia-6.9b",         # 6.9B
+        "timdettmers/guanaco-7b",         # 7B - Guanaco
     ]
 }
+
+# 실험에 사용할 모델들 (run_all_models.sh와 동일)
+EXPERIMENT_MODELS = [
+    "gpt2",
+    "gpt2-medium",
+    "EleutherAI/pythia-1.4b",
+    "EleutherAI/pythia-2.8b",
+    "tiiuae/falcon-7b",
+    "mosaicml/mpt-7b",
+]
+
+EXPERIMENT_MODELS_LIGHT = [
+    "gpt2",
+    "gpt2-medium",
+    "EleutherAI/pythia-1.4b",
+    "EleutherAI/pythia-2.8b",
+]
+
+EXPERIMENT_MODELS_HEAVY = [
+    "tiiuae/falcon-7b",
+    "mosaicml/mpt-7b",
+    "timdettmers/guanaco-7b",
+]
 
 def download_model(model_name: str, cache_dir: str = None):
     """
@@ -131,9 +155,16 @@ def list_models():
     for model in RECOMMENDED_MODELS["large"]:
         print(f"  - {model}")
     
+    print("\n🔬 실험용 프리셋")
+    print("-" * 70)
+    print(f"  experiment-all   : 전체 실험 모델 ({len(EXPERIMENT_MODELS)}개)")
+    print(f"  experiment-light : 경량 모델만 ({len(EXPERIMENT_MODELS_LIGHT)}개)")
+    print(f"  experiment-heavy : 대용량 모델만 ({len(EXPERIMENT_MODELS_HEAVY)}개)")
+    
     print("\n" + "="*70)
     print("\n사용법:")
     print("  python download_models.py --size small")
+    print("  python download_models.py --preset experiment-all")
     print("  python download_models.py --models gpt2 EleutherAI/pythia-1.4b")
     print("="*70 + "\n")
 
@@ -144,10 +175,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 예시:
+  # 실험용 모든 모델 한 번에 다운로드 (추천!) ⭐
+  python download_models.py --preset experiment-all
+  
+  # 경량 실험 모델만
+  python download_models.py --preset experiment-light
+  
   # Small 모델 전부 다운로드
   python download_models.py --size small
   
-  # Medium 모델 전부 다운로드 (추천)
+  # Medium 모델 전부 다운로드
   python download_models.py --size medium
   
   # 특정 모델만 다운로드
@@ -165,6 +202,11 @@ def main():
         "--size",
         choices=["small", "medium", "large", "all"],
         help="다운로드할 모델 크기 카테고리"
+    )
+    parser.add_argument(
+        "--preset",
+        choices=["experiment-all", "experiment-light", "experiment-heavy"],
+        help="실험용 모델 프리셋 (실험에 사용할 모든 모델 한 번에 다운로드)"
     )
     parser.add_argument(
         "--models",
@@ -193,7 +235,18 @@ def main():
     # 다운로드할 모델 결정
     models_to_download = []
     
-    if args.size:
+    if args.preset:
+        # 실험용 프리셋
+        if args.preset == "experiment-all":
+            models_to_download = EXPERIMENT_MODELS
+            print(f"\n🔬 전체 실험 모델 ({len(EXPERIMENT_MODELS)}개) 다운로드")
+        elif args.preset == "experiment-light":
+            models_to_download = EXPERIMENT_MODELS_LIGHT
+            print(f"\n🔬 경량 실험 모델 ({len(EXPERIMENT_MODELS_LIGHT)}개) 다운로드")
+        elif args.preset == "experiment-heavy":
+            models_to_download = EXPERIMENT_MODELS_HEAVY
+            print(f"\n🔬 대용량 실험 모델 ({len(EXPERIMENT_MODELS_HEAVY)}개) 다운로드")
+    elif args.size:
         if args.size == "all":
             models_to_download = (
                 RECOMMENDED_MODELS["small"] +
@@ -205,7 +258,7 @@ def main():
     elif args.models:
         models_to_download = args.models
     else:
-        print("에러: --size 또는 --models를 지정해야 합니다.")
+        print("에러: --size, --preset 또는 --models를 지정해야 합니다.")
         print("도움말: python download_models.py --help")
         return
     

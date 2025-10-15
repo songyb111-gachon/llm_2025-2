@@ -41,12 +41,14 @@ do
     
     MODEL_SAFE=$(echo "$MODEL" | tr '/' '_')
     OUTPUT_FILE="$RESULTS_DIR/results_${MODEL_SAFE}.json"
+    LOG_FILE="$RESULTS_DIR/log_${MODEL_SAFE}.txt"
     
     python simple_gcg_attack.py \
         --model_name "$MODEL" \
         --num_samples $NUM_SAMPLES \
         --use_existing_suffix \
         --output_file "$OUTPUT_FILE" \
+        --log_file "$LOG_FILE" \
         --device cuda
     
     if [ $? -eq 0 ]; then

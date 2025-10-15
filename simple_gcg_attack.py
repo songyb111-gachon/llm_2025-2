@@ -13,8 +13,28 @@ from tqdm import tqdm
 import gc
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+def setup_logger(log_file=None):
+    """로거 설정"""
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    
+    # 포맷 설정
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    
+    # 콘솔 핸들러
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # 파일 핸들러 (지정된 경우)
+    if log_file:
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    
+    return logger
+
+logger = None  # main에서 초기화
 
 
 class SimpleGCGAttack:
@@ -182,10 +202,18 @@ def main():
     parser.add_argument("--num_steps", type=int, default=250, help="최적화 스텝 수")
     parser.add_argument("--suffix_length", type=int, default=20, help="Suffix 길이")
     parser.add_argument("--output_file", type=str, default="results.json")
+    parser.add_argument("--log_file", type=str, default=None, help="로그 파일 경로")
     parser.add_argument("--use_existing_suffix", action="store_true", help="기존 suffix 재사용")
     parser.add_argument("--device", type=str, default="cuda", choices=["cuda", "cpu"])
     
     args = parser.parse_args()
+    
+    # 로거 초기화
+    global logger
+    logger = setup_logger(args.log_file)
+    
+    if args.log_file:
+        logger.info(f"로그 파일: {args.log_file}")
     
     # Artifacts 로드
     logger.info(f"Attack artifacts 로딩: {args.artifacts_path}")
