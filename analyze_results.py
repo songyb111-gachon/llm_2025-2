@@ -34,7 +34,8 @@ def analyze_results(result_file: str):
     success_examples = [r for r in results if r.get('is_success', False)][:3]
     for i, example in enumerate(success_examples, 1):
         print(f"\n[성공 #{i}]")
-        print(f"Prompt: {example['prompt'][:80]}...")
+        goal = example.get('goal', example.get('prompt', ''))
+        print(f"Goal: {goal[:80]}...")
         if 'suffix' in example:
             print(f"Suffix: {example['suffix'][:60]}...")
         print(f"Response: {example['response'][:150]}...")
@@ -46,7 +47,8 @@ def analyze_results(result_file: str):
     failure_examples = [r for r in results if not r.get('is_success', False)][:3]
     for i, example in enumerate(failure_examples, 1):
         print(f"\n[실패 #{i}]")
-        print(f"Prompt: {example['prompt'][:80]}...")
+        goal = example.get('goal', example.get('prompt', ''))
+        print(f"Goal: {goal[:80]}...")
         if 'suffix' in example:
             print(f"Suffix: {example['suffix'][:60]}...")
         if 'response' in example:

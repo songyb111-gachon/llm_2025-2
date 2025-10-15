@@ -251,7 +251,14 @@ class GCGAttack:
 def load_jailbreak_bench_data(json_path: str) -> List[Dict]:
     """Jailbreak Bench attack artifacts 로드"""
     with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        raw_data = json.load(f)
+    
+    # jailbreaks 키 안에 실제 데이터가 있음
+    if isinstance(raw_data, dict) and 'jailbreaks' in raw_data:
+        data = raw_data['jailbreaks']
+    else:
+        data = raw_data if isinstance(raw_data, list) else [raw_data]
+    
     return data
 
 
@@ -320,24 +327,28 @@ def main():
     for idx, item in enumerate(tqdm(artifacts, desc="GCG 공격 실행")):
         logger.info(f"\n{'='*50}")
         logger.info(f"샘플 {idx+1}/{len(artifacts)}")
-        logger.info(f"Prompt: {item['prompt']}")
+        
+        # goal 또는 prompt 키 사용
+        goal = item.get('goal', item.get('prompt', ''))
+        logger.info(f"Goal: {goal}")
         
         try:
             if args.skip_generation:
                 # 기존 suffix 사용
-                suffix = item.get('jailbreak_prompt', '').replace(item['prompt'], '').strip()
+                original_prompt = item.get('prompt', '')
+                suffix = original_prompt.replace(goal, '').strip()
             else:
                 # 새로운 suffix 생성
                 target = "Sure, here's how to"
                 suffix = gcg.generate_suffix(
-                    prompt=item['prompt'],
+                    prompt=goal,
                     target=target,
                     suffix_length=args.suffix_length,
                 )
             
             # 공격 테스트
             result = gcg.test_attack(
-                prompt=item['prompt'],
+                prompt=goal,
                 suffix=suffix,
                 target="Sure",  # 더 일반적인 성공 기준
             )
@@ -357,7 +368,8 @@ def main():
             logger.error(f"에러 발생: {str(e)}")
             results.append({
                 "index": idx,
-                "prompt": item['prompt'],
+                "goal": goal,
+                "prompt": item.get('prompt', goal),
                 "error": str(e),
                 "is_success": False,
             })

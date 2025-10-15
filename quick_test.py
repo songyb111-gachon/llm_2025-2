@@ -34,7 +34,11 @@ def quick_test(model_name: str = "gpt2"):
     try:
         with open("vicuna-13b-v1.5.json", 'r', encoding='utf-8') as f:
             data = json.load(f)
-        print(f"✓ {len(data)}개 샘플 로드됨")
+        # jailbreaks 키 안에 실제 데이터가 있음
+        jailbreaks = data.get('jailbreaks', data)
+        if isinstance(jailbreaks, dict):
+            jailbreaks = [jailbreaks]
+        print(f"✓ {len(jailbreaks)}개 샘플 로드됨")
     except FileNotFoundError:
         print("✗ vicuna-13b-v1.5.json 파일이 없습니다")
         print("  먼저 'python download_artifacts.py'를 실행하세요")
@@ -42,8 +46,9 @@ def quick_test(model_name: str = "gpt2"):
     
     # 3. 테스트 실행
     print("\n[3/4] 테스트 샘플 실행")
-    test_sample = data[0]
-    prompt = test_sample['prompt']
+    test_sample = jailbreaks[0]
+    # 'prompt' 또는 'goal' 키 확인
+    prompt = test_sample.get('goal', test_sample.get('prompt', ''))
     
     print(f"Prompt: {prompt[:100]}...")
     

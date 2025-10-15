@@ -190,7 +190,13 @@ def main():
     # Artifacts 로드
     logger.info(f"Attack artifacts 로딩: {args.artifacts_path}")
     with open(args.artifacts_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        raw_data = json.load(f)
+    
+    # jailbreaks 키 안에 실제 데이터가 있음
+    if isinstance(raw_data, dict) and 'jailbreaks' in raw_data:
+        data = raw_data['jailbreaks']
+    else:
+        data = raw_data if isinstance(raw_data, list) else [raw_data]
     
     data = data[:args.num_samples]
     logger.info(f"총 {len(data)}개 샘플 테스트")
@@ -204,25 +210,30 @@ def main():
     for idx, item in enumerate(tqdm(data, desc="공격 진행 중")):
         logger.info(f"\n{'='*60}")
         logger.info(f"샘플 {idx+1}/{len(data)}")
-        logger.info(f"Prompt: {item['prompt'][:100]}...")
+        
+        # goal 또는 prompt 키 사용
+        goal = item.get('goal', item.get('prompt', ''))
+        logger.info(f"Goal: {goal[:100]}...")
         
         try:
             if args.use_existing_suffix:
                 # 기존 suffix 추출 (Vicuna artifacts에서)
-                original_jailbreak = item.get('jailbreak_prompt', '')
-                suffix = original_jailbreak.replace(item['prompt'], '').strip()
+                # prompt 필드에는 goal + suffix가 함께 있음
+                original_prompt = item.get('prompt', '')
+                suffix = original_prompt.replace(goal, '').strip()
                 logger.info(f"기존 suffix 사용: {suffix[:50]}...")
             else:
                 # 새로운 suffix 생성
                 suffix = attacker.generate_suffix_gcg(
-                    prompt=item['prompt'],
+                    prompt=goal,
                     num_steps=args.num_steps,
                     suffix_length=args.suffix_length,
                 )
             
             # 테스트
-            result = attacker.test_suffix(item['prompt'], suffix)
-            result['prompt'] = item['prompt']
+            result = attacker.test_suffix(goal, suffix)
+            result['goal'] = goal
+            result['prompt'] = item.get('prompt', goal)
             result['suffix'] = suffix
             result['index'] = idx
             
@@ -239,7 +250,8 @@ def main():
         except Exception as e:
             logger.error(f"에러: {str(e)}")
             results.append({
-                "prompt": item['prompt'],
+                "goal": goal,
+                "prompt": item.get('prompt', goal),
                 "error": str(e),
                 "is_success": False,
                 "index": idx,
