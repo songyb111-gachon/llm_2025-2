@@ -5,11 +5,17 @@
 ### 1단계: 환경 설정 (1분)
 
 ```bash
-# 패키지 설치
+# 방법 A: 자동 설정 (추천)
+bash setup_experiment.sh
+
+# 방법 B: 수동 설정
 pip install -r requirements.txt
 
 # GPU 확인 (선택사항)
 python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
+
+# 모델 미리 다운로드 (선택사항, 시간 절약)
+python download_models.py --size medium
 ```
 
 ### 2단계: 빠른 테스트 (1분)

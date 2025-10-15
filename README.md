@@ -16,6 +16,35 @@ pip install -r requirements.txt
 python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 ```
 
+### 3. 모델 미리 다운로드 (추천) ⭐
+
+실험 전에 모델을 미리 다운로드하면 시간을 절약할 수 있습니다:
+
+```bash
+# Small 모델 (GPU 8GB 이하)
+python download_models.py --size small
+
+# Medium 모델 (GPU 16GB 권장) - 추천!
+python download_models.py --size medium
+
+# 특정 모델만 다운로드
+python download_models.py --models gpt2 EleutherAI/pythia-1.4b
+
+# 다운로드 가능한 모델 리스트 확인
+python download_models.py --list
+
+# 이미 다운로드된 모델 확인
+python check_models.py
+```
+
+### 4. 자동 설정 (올인원)
+
+모든 설정을 한 번에:
+
+```bash
+bash setup_experiment.sh
+```
+
 ## 실행 방법
 
 ### 방법 1: 자동 실행 스크립트 사용 (추천)
