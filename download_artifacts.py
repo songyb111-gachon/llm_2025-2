@@ -8,7 +8,7 @@ import os
 
 def download_artifacts():
     """Vicuna-13B GCG attack artifacts 다운로드"""
-    url = "https://raw.githubusercontent.com/JailbreakBench/artifacts/main/attack_artifacts/GCG/white_box/vicuna-13b-v1.5.json"
+    url = "https://raw.githubusercontent.com/JailbreakBench/artifacts/main/attack-artifacts/GCG/white_box/vicuna-13b-v1.5.json"
     
     print(f"다운로드 중: {url}")
     
