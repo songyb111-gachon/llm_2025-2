@@ -40,13 +40,25 @@ class ComprehensiveGCGEvaluator:
         self.device = device
         
         logger.info(f"모델 로딩 중: {model_name}")
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-            device_map="auto" if device == "cuda" else None,
-            low_cpu_mem_usage=True,
-            use_safetensors=True,
-        )
+        
+        # MPT-7B는 safetensors 문제가 있으므로 예외 처리
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                device_map="auto" if device == "cuda" else None,
+                low_cpu_mem_usage=True,
+                use_safetensors=True,
+            )
+        except (OSError, KeyError) as e:
+            logger.warning(f"Safetensors 로딩 실패, 일반 로딩 시도: {str(e)[:100]}")
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                device_map="auto" if device == "cuda" else None,
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+            )
         
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
         

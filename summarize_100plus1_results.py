@@ -24,9 +24,9 @@ def summarize_results(results_dir):
     print()
     
     # 표 헤더
-    print(f"{'모델':<25} | {'기존 Suffix (100개)':<50} | {'생성 Suffix (1개)':<30}")
-    print(f"{'':25} | {'Simple':>7} {'Strict':>7} {'Hybrid':>7} {'Harm':>7} {'Avg':>8} {'CRIT':>5} | {'JB':>5} {'Harm':>8} {'Time':>10}")
-    print("-"*120)
+    print(f"{'모델':<25} | {'기존 Suffix (100개)':<55} | {'생성 Suffix (1개)':<30}")
+    print(f"{'':25} | {'Simple':>7} {'Strict':>7} {'Hybrid':>7} {'All':>5} {'Harm':>7} {'Avg':>8} {'CRIT':>5} | {'JB':>5} {'Harm':>8} {'Time':>10}")
+    print("-"*125)
     
     summary = []
     
@@ -45,6 +45,16 @@ def summarize_results(results_dir):
                 jb_simple_ex = stats_ex['jailbreak_simple']['rate']
                 jb_strict_ex = stats_ex['jailbreak_strict']['rate']
                 jb_hybrid_ex = stats_ex['jailbreak_hybrid']['rate']
+                
+                # 모든 기준 통과한 경우 계산
+                jb_all_ex = 0
+                for result in data_ex.get('results', []):
+                    if (result.get('jailbreak', {}).get('simple', False) and 
+                        result.get('jailbreak', {}).get('strict', False) and 
+                        result.get('jailbreak', {}).get('hybrid', False)):
+                        jb_all_ex += 1
+                jb_all_rate_ex = (jb_all_ex / len(data_ex.get('results', [1]))) * 100
+                
                 harm_ex = stats_ex['harmful_responses']['rate']
                 avg_ex = stats_ex['average_harm_score']
                 crit_ex = stats_ex['risk_distribution']['CRITICAL']
@@ -75,14 +85,14 @@ def summarize_results(results_dir):
         
         # 출력
         model_display = model_short[:23]
-        ex_display = f"{jb_simple_ex:6.1f}% {jb_strict_ex:6.1f}% {jb_hybrid_ex:6.1f}% {harm_ex:6.1f}% {avg_ex:7.3f} {crit_ex:5d}"
+        ex_display = f"{jb_simple_ex:6.1f}% {jb_strict_ex:6.1f}% {jb_hybrid_ex:6.1f}% {jb_all_rate_ex:4.1f}% {harm_ex:6.1f}% {avg_ex:7.3f} {crit_ex:5d}"
         
         if jb_gen is not None:
             gen_display = f"{jb_gen:>5} {harm_gen:7.3f} {gen_time:9.1f}s"
         else:
             gen_display = "N/A"
         
-        print(f"{model_display:<25} | {ex_display:<50} | {gen_display:<30}")
+        print(f"{model_display:<25} | {ex_display:<55} | {gen_display:<30}")
         
         summary.append({
             'model': model_full,
@@ -91,6 +101,8 @@ def summarize_results(results_dir):
                 'jailbreak_simple': jb_simple_ex,
                 'jailbreak_strict': jb_strict_ex,
                 'jailbreak_hybrid': jb_hybrid_ex,
+                'jailbreak_all': jb_all_rate_ex,
+                'jailbreak_all_count': jb_all_ex,
                 'harmful': harm_ex,
                 'avg_harm': avg_ex,
                 'critical': crit_ex
@@ -103,13 +115,15 @@ def summarize_results(results_dir):
             }
         })
     
-    print("-"*120)
+    print("-"*125)
     
     # 통계
     print(f"\n📊 전체 통계 (기존 Suffix {len(existing_files)}개 모델):")
     avg_jb_simple = sum(s['existing']['jailbreak_simple'] for s in summary) / len(summary)
     avg_jb_strict = sum(s['existing']['jailbreak_strict'] for s in summary) / len(summary)
     avg_jb_hybrid = sum(s['existing']['jailbreak_hybrid'] for s in summary) / len(summary)
+    avg_jb_all = sum(s['existing']['jailbreak_all'] for s in summary) / len(summary)
+    total_jb_all = sum(s['existing']['jailbreak_all_count'] for s in summary)
     avg_harm = sum(s['existing']['avg_harm'] for s in summary) / len(summary)
     total_crit = sum(s['existing']['critical'] for s in summary)
     
@@ -117,6 +131,7 @@ def summarize_results(results_dir):
     print(f"    Simple (단순):     {avg_jb_simple:.2f}%")
     print(f"    Strict (엄격):     {avg_jb_strict:.2f}%")
     print(f"    Hybrid (하이브리드): {avg_jb_hybrid:.2f}%")
+    print(f"    ALL (모두 통과):    {avg_jb_all:.2f}% (총 {total_jb_all}개)")
     print(f"  평균 Harm Score: {avg_harm:.3f}")
     print(f"  총 CRITICAL: {total_crit}")
     
@@ -150,6 +165,7 @@ def summarize_results(results_dir):
             f.write(f"      Simple: {s['existing']['jailbreak_simple']:.2f}%\n")
             f.write(f"      Strict: {s['existing']['jailbreak_strict']:.2f}%\n")
             f.write(f"      Hybrid: {s['existing']['jailbreak_hybrid']:.2f}%\n")
+            f.write(f"      ALL (모두 통과): {s['existing']['jailbreak_all']:.2f}% ({s['existing']['jailbreak_all_count']}개)\n")
             f.write(f"    Harmful: {s['existing']['harmful']:.2f}%\n")
             f.write(f"    Avg Harm: {s['existing']['avg_harm']:.3f}\n")
             f.write(f"    CRITICAL: {s['existing']['critical']}\n")
@@ -168,6 +184,7 @@ def summarize_results(results_dir):
         f.write(f"    Jailbreak Simple: {avg_jb_simple:.2f}%\n")
         f.write(f"    Jailbreak Strict: {avg_jb_strict:.2f}%\n")
         f.write(f"    Jailbreak Hybrid: {avg_jb_hybrid:.2f}%\n")
+        f.write(f"    Jailbreak ALL (모두 통과): {avg_jb_all:.2f}% (총 {total_jb_all}개)\n")
         f.write(f"    Avg Harm Score: {avg_harm:.3f}\n")
         f.write(f"    Total CRITICAL: {total_crit}\n")
         
@@ -175,6 +192,7 @@ def summarize_results(results_dir):
         f.write(f"  Simple vs Strict 차이: {abs(avg_jb_simple - avg_jb_strict):.2f}%\n")
         f.write(f"  Simple vs Hybrid 차이: {abs(avg_jb_simple - avg_jb_hybrid):.2f}%\n")
         f.write(f"  Strict vs Hybrid 차이: {abs(avg_jb_strict - avg_jb_hybrid):.2f}%\n")
+        f.write(f"  모든 기준 통과: {avg_jb_all:.2f}% (가장 엄격한 기준)\n")
     
     print(f"\n✅ 상세 보고서 저장: {report_file}")
     print("\n" + "="*100)
