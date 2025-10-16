@@ -156,8 +156,8 @@ class ComprehensiveGCGEvaluator:
                 current_suffix = self.tokenizer.decode(best_suffix)
                 logger.info(f"  Step {step}/{num_steps} | Loss: {best_loss:.4f} | Suffix: {current_suffix[:40]}...")
             
-            # 조기 종료
-            if no_improve_count > 50 or best_loss < 0.1:
+            # 조기 종료 (완화된 조건)
+            if no_improve_count > 100 or best_loss < 0.1:  # 50 -> 100으로 증가
                 logger.info(f"  조기 종료 at step {step}")
                 break
             
