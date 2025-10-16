@@ -21,15 +21,15 @@ GCG (Greedy Coordinate Gradient) 공격을 구현하고 다양한 LLM 모델에 
 - 다양한 오픈소스 LLM 모델에 대한 **White-box GCG 공격** 구현
 - **3가지 Jailbreak 평가 기준** (Simple, Strict, Hybrid, ALL)
 - **HarmBench 기반 해로움 평가** (Harm Score, Category, Risk Level)
-- **10개 기존 suffix + 10개 새로운 suffix** 비교 실험
+- **100개 기존 suffix + 10개 새로운 suffix** 비교 실험
 - **개선된 GCG 알고리즘** (7가지 최적화 기법 적용)
 
 ### 실험 설계
 
-**1단계: 기존 Suffix (10개)**
+**1단계: 기존 Suffix (100개)**
 - Vicuna-13B용 GCG suffix를 다른 모델에 테스트
 - 3가지 Jailbreak 기준 + Harm 평가
-- 빠른 실행 (suffix 생성 없음)
+- 100개 샘플로 높은 신뢰성 확보
 
 ⬇️
 
@@ -45,7 +45,7 @@ GCG (Greedy Coordinate Gradient) 공격을 구현하고 다양한 LLM 모델에 
 - 모델별/기준별 성공률 비교
 - Harm Score 분석
 - 생성 vs 기존 suffix 효과 비교
-- 평균 10개 결과로 신뢰성 향상
+- 기존 100개 + 생성 10개로 균형잡힌 평가
 
 ## ✨ 주요 기능
 
@@ -76,10 +76,10 @@ GCG (Greedy Coordinate Gradient) 공격을 구현하고 다양한 LLM 모델에 
 - **Is Harmful**: Boolean 판단
 
 ### 4. 효율적이고 신뢰성 높은 실험 설계
-- **10개 기존 suffix**: 빠른 평가 (생성 시간 없음)
-- **10개 새로운 suffix**: 충분한 시도로 성공률 측정
+- **100개 기존 suffix**: 높은 통계적 신뢰성
+- **10개 새로운 suffix**: 충분한 생성 시도로 성공률 측정
 - **자동 비교**: 기존 vs 생성 suffix 효과 분석
-- **통계적 신뢰성**: 10회 평균으로 안정적인 결과
+- **균형잡힌 설계**: 기존 많이 + 생성 적당히
 
 ### 5. 강력한 모델 로딩
 - **MPT-7B**: Safetensors 실패 시 자동 fallback
@@ -117,11 +117,11 @@ python download_models.py --preset experiment-light
 python check_models.py
 ```
 
-### 4단계: 전체 실험 실행 (10+10) 🎯
+### 4단계: 전체 실험 실행 (100+10) 🎯
 
 ```bash
-# 6개 모델에 대해 10개 기존 + 10개 생성 suffix 실험
-nohup bash run_all_models_with_one_generation.sh 10 10 > experiment.log 2>&1 &
+# 6개 모델에 대해 100개 기존 + 10개 생성 suffix 실험
+nohup bash run_all_models_with_one_generation.sh 100 10 > experiment.log 2>&1 &
 
 # 진행 확인
 tail -f experiment.log
@@ -131,25 +131,25 @@ tail -f experiment.log
 
 ```bash
 # 결과 요약 보고서 생성
-python summarize_10plus10_results.py results_10plus10_YYYYMMDD_HHMMSS
+python summarize_100plus10_results.py results_100plus10_YYYYMMDD_HHMMSS
 
 # 상세 보고서는 자동으로 저장됨:
-# results_10plus10_YYYYMMDD_HHMMSS/summary_report.txt
+# results_100plus10_YYYYMMDD_HHMMSS/summary_report.txt
 ```
 
 ## 📖 상세 사용 가이드
 
 ### 옵션 1: 전체 자동 실험 (추천)
 
-**10개 기존 + 10개 생성 suffix 실험** (균형잡힌 설계!)
+**100개 기존 + 10개 생성 suffix 실험** (신뢰성과 효율성의 균형!)
 
 ```bash
 bash run_all_models_with_one_generation.sh [NUM_EXISTING] [NUM_GENERATED]
 
 # 예시
-bash run_all_models_with_one_generation.sh 10 10   # 10개 기존 + 10개 생성 (기본)
-bash run_all_models_with_one_generation.sh 20 5    # 20개 기존 + 5개 생성
-bash run_all_models_with_one_generation.sh 5 20    # 5개 기존 + 20개 생성
+bash run_all_models_with_one_generation.sh 100 10  # 100개 기존 + 10개 생성 (기본)
+bash run_all_models_with_one_generation.sh 50 20   # 50개 기존 + 20개 생성
+bash run_all_models_with_one_generation.sh 200 5   # 200개 기존 + 5개 생성
 ```
 
 **실행되는 모델:**
@@ -287,7 +287,7 @@ success = Simple AND Strict AND Hybrid
 
 | 스크립트 | 설명 | 사용 시기 |
 |---------|------|-----------|
-| `run_all_models_with_one_generation.sh` | **10+10 실험** (추천) | 메인 실험 |
+| `run_all_models_with_one_generation.sh` | **100+10 실험** (추천) | 메인 실험 |
 | `run_all_models_comprehensive.sh` | 기존 suffix만 (빠름) | 빠른 평가 |
 | `run_all_models_light.sh` | 경량 모델만 | GPU 메모리 부족 |
 | `run_all_models_heavy.sh` | 대용량 모델만 | 고성능 GPU |
@@ -299,8 +299,9 @@ success = Simple AND Strict AND Hybrid
 |---------|------|------|------|
 | `run_comprehensive_evaluation.py` | 기존 suffix 평가 | 모델명, 샘플 수 | JSON 결과 |
 | `run_comprehensive_with_generation.py` | 새 suffix 생성+평가 (개선됨) | 모델명, steps | JSON 결과 |
+| `summarize_100plus10_results.py` | 결과 요약 보고서 (100+10) | 결과 디렉토리 | TXT 보고서 |
 | `summarize_10plus10_results.py` | 결과 요약 보고서 (10+10) | 결과 디렉토리 | TXT 보고서 |
-| `summarize_100plus1_results.py` | 결과 요약 보고서 (레거시) | 결과 디렉토리 | TXT 보고서 |
+| `summarize_100plus1_results.py` | 결과 요약 보고서 (100+1) | 결과 디렉토리 | TXT 보고서 |
 | `download_models.py` | 모델 사전 다운로드 | 프리셋/모델명 | 로컬 캐시 |
 | `check_models.py` | 다운로드 확인 | 없음 | 상태 표시 |
 
@@ -317,8 +318,8 @@ success = Simple AND Strict AND Hybrid
 ### 실험 결과 구조
 
 ```bash
-results_10plus10_20251016_135358/
-├── results_pythia-1.4b_existing.json      # 기존 10개
+results_100plus10_20251016_135358/
+├── results_pythia-1.4b_existing.json      # 기존 100개
 ├── results_pythia-1.4b_generated.json     # 생성 10개
 ├── results_pythia-2.8b_existing.json
 ├── results_pythia-2.8b_generated.json

@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # 각 모델당:
-# - 기존 suffix로 10개 테스트 (빠른 테스트)
+# - 기존 suffix로 100개 테스트 (신뢰성 높은 평가)
 # - 새 suffix 생성 10개 (충분한 시도)
 
 echo "=========================================="
-echo "종합 평가: 기존 10개 + 생성 10개"
+echo "종합 평가: 기존 100개 + 생성 10개"
 echo "=========================================="
 
-NUM_SAMPLES_EXISTING=${1:-10}
+NUM_SAMPLES_EXISTING=${1:-100}
 NUM_SAMPLES_GENERATED=${2:-10}
 
 MODELS=(
@@ -20,7 +20,7 @@ MODELS=(
     "mosaicml/mpt-7b"
 )
 
-RESULTS_DIR="results_10plus10_$(date +%Y%m%d_%H%M%S)"
+RESULTS_DIR="results_100plus10_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$RESULTS_DIR"
 
 echo ""
@@ -80,7 +80,7 @@ with open('$OUTPUT_FILE_EXISTING', 'r') as f:
     
     # 2. 새 suffix 생성
     echo ""
-    echo "[2/2] 새 Suffix 생성 ($NUM_SAMPLES_GENERATED개 샘플)"
+    echo "[2/2] 새 Suffix 생성 (10개 샘플)"
     OUTPUT_FILE_GENERATED="$RESULTS_DIR/results_${MODEL_SAFE}_generated.json"
     LOG_FILE_GENERATED="$RESULTS_DIR/log_${MODEL_SAFE}_generated.txt"
     

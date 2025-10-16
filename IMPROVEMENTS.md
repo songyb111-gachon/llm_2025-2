@@ -7,13 +7,13 @@
 - 생성 suffix: 1개 시연
 
 ### 개선 후
-- **기존 suffix: 10개 테스트** (빠른 검증)
+- **기존 suffix: 100개 테스트** (높은 신뢰성 유지)
 - **생성 suffix: 10개 생성** (충분한 시도)
 
 **이유**: 
-- 100개 테스트는 시간이 너무 오래 걸림
+- 100개 테스트는 통계적으로 신뢰성 있는 평가
 - 생성 1개는 실패 시 재시도 불가
-- 10+10은 효율성과 신뢰성의 균형
+- 100+10은 신뢰성과 효율성의 균형
 
 ---
 
@@ -135,8 +135,8 @@ else:
 cd ~/llm_2025-2
 git pull
 
-# 실행 (10개 기존 + 10개 생성)
-nohup bash run_all_models_with_one_generation.sh 10 10 > experiment.log 2>&1 &
+# 실행 (100개 기존 + 10개 생성)
+nohup bash run_all_models_with_one_generation.sh 100 10 > experiment.log 2>&1 &
 
 # 확인
 tail -f experiment.log
@@ -146,7 +146,7 @@ tail -f experiment.log
 
 ```bash
 # 실험 완료 후
-python summarize_10plus10_results.py results_10plus10_YYYYMMDD_HHMMSS/
+python summarize_100plus10_results.py results_100plus10_YYYYMMDD_HHMMSS/
 ```
 
 ---
