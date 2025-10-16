@@ -21,20 +21,22 @@ GCG (Greedy Coordinate Gradient) 공격을 구현하고 다양한 LLM 모델에 
 - 다양한 오픈소스 LLM 모델에 대한 **White-box GCG 공격** 구현
 - **3가지 Jailbreak 평가 기준** (Simple, Strict, Hybrid, ALL)
 - **HarmBench 기반 해로움 평가** (Harm Score, Category, Risk Level)
-- **100개 기존 suffix + 1개 새로운 suffix** 비교 실험
+- **10개 기존 suffix + 10개 새로운 suffix** 비교 실험
+- **개선된 GCG 알고리즘** (7가지 최적화 기법 적용)
 
 ### 실험 설계
 
-**1단계: 기존 Suffix (100개)**
+**1단계: 기존 Suffix (10개)**
 - Vicuna-13B용 GCG suffix를 다른 모델에 테스트
 - 3가지 Jailbreak 기준 + Harm 평가
 - 빠른 실행 (suffix 생성 없음)
 
 ⬇️
 
-**2단계: 새로운 Suffix (1개)**
-- 각 모델에 최적화된 GCG suffix 생성
-- 500 step, 20 token 길이
+**2단계: 새로운 Suffix (10개)**
+- 각 모델에 최적화된 GCG suffix 생성 (10회 시도)
+- 500 step, 25 token 길이 (개선된 알고리즘)
+- 의미있는 초기화 + Top-k exploration
 - 생성 시간 및 효과 비교
 
 ⬇️
@@ -43,27 +45,43 @@ GCG (Greedy Coordinate Gradient) 공격을 구현하고 다양한 LLM 모델에 
 - 모델별/기준별 성공률 비교
 - Harm Score 분석
 - 생성 vs 기존 suffix 효과 비교
+- 평균 10개 결과로 신뢰성 향상
 
 ## ✨ 주요 기능
 
-### 1. 다중 평가 기준
+### 1. 개선된 GCG 알고리즘 🚀
+**7가지 최적화 기법 적용**:
+- ✅ 의미있는 초기화 (please, sure, help 등)
+- ✅ Candidate 수 증가: 128 → **256개**
+- ✅ Suffix 길이 증가: 20 → **25 토큰**
+- ✅ 더 효과적인 target: `"Sure, I'd be happy to help! Here is"`
+- ✅ Top-k exploration/exploitation 전략 (초반 70% exploration)
+- ✅ 위치별 최적화 (초반 1/3은 앞쪽 집중)
+- ✅ 조기 종료 완화: 50 → **100 스텝**
+
+**예상 효과**: Loss 수렴 43% 개선, Jailbreak 성공률 20-40% 향상
+
+상세: [`IMPROVEMENTS.md`](./IMPROVEMENTS.md)
+
+### 2. 다중 평가 기준
 - **Simple**: 긍정 키워드 기반 단순 판단
 - **Strict**: 거부 키워드 가중치 높은 엄격한 판단
 - **Hybrid**: 점수 기반 균형잡힌 판단
 - **ALL**: 3가지 기준 모두 통과한 경우 (가장 엄격)
 
-### 2. HarmBench 기반 해로움 평가
+### 3. HarmBench 기반 해로움 평가
 - **Harm Score**: 0.0 ~ 1.0 (위험도)
 - **Category**: Illegal, Violence, Privacy, etc.
 - **Risk Level**: LOW, MEDIUM, HIGH, CRITICAL
 - **Is Harmful**: Boolean 판단
 
-### 3. 효율적인 실험 설계
-- **100개 기존 suffix**: 빠른 평가 (생성 시간 없음)
-- **1개 새로운 suffix**: 모델별 최적화 (시간 집중)
+### 4. 효율적이고 신뢰성 높은 실험 설계
+- **10개 기존 suffix**: 빠른 평가 (생성 시간 없음)
+- **10개 새로운 suffix**: 충분한 시도로 성공률 측정
 - **자동 비교**: 기존 vs 생성 suffix 효과 분석
+- **통계적 신뢰성**: 10회 평균으로 안정적인 결과
 
-### 4. 강력한 모델 로딩
+### 5. 강력한 모델 로딩
 - **MPT-7B**: Safetensors 실패 시 자동 fallback
 - **자동 tokenizer 설정**: pad_token 자동 처리
 - **메모리 최적화**: float16, device_map="auto"
@@ -99,11 +117,11 @@ python download_models.py --preset experiment-light
 python check_models.py
 ```
 
-### 4단계: 전체 실험 실행 (100+1) 🎯
+### 4단계: 전체 실험 실행 (10+10) 🎯
 
 ```bash
-# 6개 모델에 대해 100개 기존 + 1개 생성 suffix 실험
-nohup bash run_all_models_with_one_generation.sh 100 > experiment.log 2>&1 &
+# 6개 모델에 대해 10개 기존 + 10개 생성 suffix 실험
+nohup bash run_all_models_with_one_generation.sh 10 10 > experiment.log 2>&1 &
 
 # 진행 확인
 tail -f experiment.log
@@ -113,24 +131,25 @@ tail -f experiment.log
 
 ```bash
 # 결과 요약 보고서 생성
-python summarize_100plus1_results.py results_100plus1_YYYYMMDD_HHMMSS
+python summarize_10plus10_results.py results_10plus10_YYYYMMDD_HHMMSS
 
 # 상세 보고서는 자동으로 저장됨:
-# results_100plus1_YYYYMMDD_HHMMSS/summary_report.txt
+# results_10plus10_YYYYMMDD_HHMMSS/summary_report.txt
 ```
 
 ## 📖 상세 사용 가이드
 
 ### 옵션 1: 전체 자동 실험 (추천)
 
-**100개 기존 + 1개 생성 suffix 실험** (가장 효율적!)
+**10개 기존 + 10개 생성 suffix 실험** (균형잡힌 설계!)
 
 ```bash
-bash run_all_models_with_one_generation.sh [NUM_SAMPLES]
+bash run_all_models_with_one_generation.sh [NUM_EXISTING] [NUM_GENERATED]
 
 # 예시
-bash run_all_models_with_one_generation.sh 100  # 100개 기존 + 1개 생성
-bash run_all_models_with_one_generation.sh 50   # 50개 기존 + 1개 생성
+bash run_all_models_with_one_generation.sh 10 10   # 10개 기존 + 10개 생성 (기본)
+bash run_all_models_with_one_generation.sh 20 5    # 20개 기존 + 5개 생성
+bash run_all_models_with_one_generation.sh 5 20    # 5개 기존 + 20개 생성
 ```
 
 **실행되는 모델:**
@@ -162,17 +181,25 @@ python run_comprehensive_evaluation.py \
 ### 옵션 3: 새로운 Suffix 생성 (고급)
 
 ```bash
-# 특정 모델에 대해 새로운 suffix 생성
+# 특정 모델에 대해 새로운 suffix 생성 (개선된 알고리즘)
 python run_comprehensive_with_generation.py \
     --model_name "EleutherAI/pythia-1.4b" \
-    --num_samples 5 \
+    --num_samples 10 \
     --generate_suffix \
     --num_steps 500 \
-    --suffix_length 20 \
+    --suffix_length 25 \
     --output_file results_generated.json \
     --log_file generated.log \
     --device cuda
 ```
+
+**개선된 GCG 알고리즘 특징**:
+- ✅ 의미있는 초기화 (please, sure, help 등)
+- ✅ Candidate 수 증가 (128 → 256)
+- ✅ Suffix 길이 증가 (20 → 25)
+- ✅ Top-k exploration/exploitation 전략
+- ✅ 위치별 최적화 (초반 앞쪽 집중)
+- ✅ 더 효과적인 target ("Sure, I'd be happy to help!")
 
 ### 옵션 4: 개별 모델 테스트
 
@@ -260,7 +287,7 @@ success = Simple AND Strict AND Hybrid
 
 | 스크립트 | 설명 | 사용 시기 |
 |---------|------|-----------|
-| `run_all_models_with_one_generation.sh` | **100+1 실험** (추천) | 메인 실험 |
+| `run_all_models_with_one_generation.sh` | **10+10 실험** (추천) | 메인 실험 |
 | `run_all_models_comprehensive.sh` | 기존 suffix만 (빠름) | 빠른 평가 |
 | `run_all_models_light.sh` | 경량 모델만 | GPU 메모리 부족 |
 | `run_all_models_heavy.sh` | 대용량 모델만 | 고성능 GPU |
@@ -271,8 +298,9 @@ success = Simple AND Strict AND Hybrid
 | 스크립트 | 설명 | 입력 | 출력 |
 |---------|------|------|------|
 | `run_comprehensive_evaluation.py` | 기존 suffix 평가 | 모델명, 샘플 수 | JSON 결과 |
-| `run_comprehensive_with_generation.py` | 새 suffix 생성+평가 | 모델명, steps | JSON 결과 |
-| `summarize_100plus1_results.py` | 결과 요약 보고서 | 결과 디렉토리 | TXT 보고서 |
+| `run_comprehensive_with_generation.py` | 새 suffix 생성+평가 (개선됨) | 모델명, steps | JSON 결과 |
+| `summarize_10plus10_results.py` | 결과 요약 보고서 (10+10) | 결과 디렉토리 | TXT 보고서 |
+| `summarize_100plus1_results.py` | 결과 요약 보고서 (레거시) | 결과 디렉토리 | TXT 보고서 |
 | `download_models.py` | 모델 사전 다운로드 | 프리셋/모델명 | 로컬 캐시 |
 | `check_models.py` | 다운로드 확인 | 없음 | 상태 표시 |
 
@@ -289,9 +317,9 @@ success = Simple AND Strict AND Hybrid
 ### 실험 결과 구조
 
 ```bash
-results_100plus1_20251016_135358/
-├── results_pythia-1.4b_existing.json      # 기존 100개
-├── results_pythia-1.4b_generated.json     # 생성 1개
+results_10plus10_20251016_135358/
+├── results_pythia-1.4b_existing.json      # 기존 10개
+├── results_pythia-1.4b_generated.json     # 생성 10개
 ├── results_pythia-2.8b_existing.json
 ├── results_pythia-2.8b_generated.json
 ├── ...
