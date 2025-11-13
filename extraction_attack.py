@@ -91,34 +91,42 @@ class KnowledgeDistillationLoss(nn.Module):
         self.ce_loss = nn.CrossEntropyLoss()
     
     def forward(self, student_logits, teacher_logits, labels, attention_mask):
-        # KL divergence loss
-        student_probs = F.log_softmax(student_logits / self.temperature, dim=-1)
-        teacher_probs = F.softmax(teacher_logits / self.temperature, dim=-1)
-        
-        kl_loss = F.kl_div(
-            student_probs,
-            teacher_probs,
-            reduction='batchmean'
-        ) * (self.temperature ** 2)
-        
-        # Cross entropy loss with labels
         # Shift for language modeling
-        shift_logits = student_logits[..., :-1, :].contiguous()
+        shift_student_logits = student_logits[..., :-1, :].contiguous()
+        shift_teacher_logits = teacher_logits[..., :-1, :].contiguous()
         shift_labels = labels[..., 1:].contiguous()
         shift_mask = attention_mask[..., 1:].contiguous()
         
         # Flatten
-        shift_logits = shift_logits.view(-1, shift_logits.size(-1))
-        shift_labels = shift_labels.view(-1)
-        shift_mask = shift_mask.view(-1)
+        batch_size, seq_len, vocab_size = shift_student_logits.shape
+        flat_student_logits = shift_student_logits.view(-1, vocab_size)
+        flat_teacher_logits = shift_teacher_logits.view(-1, vocab_size)
+        flat_labels = shift_labels.view(-1)
+        flat_mask = shift_mask.view(-1)
         
-        # Calculate loss only on valid tokens
-        ce_loss = F.cross_entropy(
-            shift_logits,
-            shift_labels,
+        # KL divergence loss (only on valid tokens)
+        student_log_probs = F.log_softmax(flat_student_logits / self.temperature, dim=-1)
+        teacher_probs = F.softmax(flat_teacher_logits / self.temperature, dim=-1)
+        
+        # KL(teacher || student) per token
+        kl_per_token = F.kl_div(
+            student_log_probs,
+            teacher_probs,
+            reduction='none',
+            log_target=False
+        ).sum(dim=-1)  # Sum over vocabulary
+        
+        # Apply mask and average
+        kl_loss = (kl_per_token * flat_mask).sum() / flat_mask.sum()
+        kl_loss = kl_loss * (self.temperature ** 2)
+        
+        # Cross entropy loss with labels (only on valid tokens)
+        ce_loss_per_token = F.cross_entropy(
+            flat_student_logits,
+            flat_labels,
             reduction='none'
         )
-        ce_loss = (ce_loss * shift_mask).sum() / shift_mask.sum()
+        ce_loss = (ce_loss_per_token * flat_mask).sum() / flat_mask.sum()
         
         # Combined loss
         total_loss = self.alpha * kl_loss + (1 - self.alpha) * ce_loss
@@ -232,25 +240,37 @@ def calculate_perplexity(model, dataloader, device):
     total_loss = 0
     total_tokens = 0
     
+    criterion = nn.CrossEntropyLoss(reduction='none')
+    
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Calculating perplexity"):
             input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
             
-            outputs = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=input_ids
-            )
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits
             
-            # Calculate loss only on valid tokens
-            loss = outputs.loss
-            num_tokens = attention_mask.sum().item()
+            # Shift for language modeling
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = input_ids[..., 1:].contiguous()
+            shift_mask = attention_mask[..., 1:].contiguous()
             
-            total_loss += loss.item() * num_tokens
-            total_tokens += num_tokens
+            # Flatten
+            shift_logits = shift_logits.view(-1, shift_logits.size(-1))
+            shift_labels = shift_labels.view(-1)
+            shift_mask = shift_mask.view(-1)
+            
+            # Calculate loss per token
+            loss_per_token = criterion(shift_logits, shift_labels)
+            
+            # Sum loss only on valid tokens
+            valid_loss = (loss_per_token * shift_mask).sum().item()
+            valid_tokens = shift_mask.sum().item()
+            
+            total_loss += valid_loss
+            total_tokens += valid_tokens
     
-    avg_loss = total_loss / total_tokens
+    avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
     perplexity = np.exp(avg_loss)
     
     return perplexity
@@ -534,4 +554,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

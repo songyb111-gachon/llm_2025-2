@@ -17,10 +17,10 @@ python extraction_attack.py \
     --train_samples 1000 \
     --test_samples 500 \
     --batch_size 32 \
-    --epochs 3 \
+    --epochs 5 \
     --learning_rate 5e-5 \
-    --temperature 1.0 \
-    --alpha 0.5 \
+    --temperature 2.0 \
+    --alpha 0.7 \
     --output_dir extraction_results \
     --save_model
 
@@ -37,10 +37,10 @@ python extraction_attack.py \
     --train_samples 10000 \
     --test_samples 500 \
     --batch_size 32 \
-    --epochs 3 \
+    --epochs 5 \
     --learning_rate 5e-5 \
-    --temperature 1.0 \
-    --alpha 0.5 \
+    --temperature 2.0 \
+    --alpha 0.7 \
     --output_dir extraction_results \
     --save_model
 
@@ -51,4 +51,5 @@ echo "========================================"
 echo ""
 echo "Results saved in: extraction_results/"
 echo ""
+
 
