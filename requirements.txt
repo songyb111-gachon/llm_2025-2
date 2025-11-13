@@ -8,3 +8,8 @@ sentencepiece>=0.1.99
 protobuf>=3.20.0
 pandas>=1.5.0
 
+# Backdoor 실험용 추가 패키지
+matplotlib>=3.5.0
+seaborn>=0.12.0
+datasets>=2.14.0
+

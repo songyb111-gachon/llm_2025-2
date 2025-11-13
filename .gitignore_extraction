@@ -1,0 +1,75 @@
+# Model Extraction Attack - .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Extraction Results
+extraction_results/
+extraction_results_test/
+extraction_visualizations/
+
+# Model checkpoints
+finetuned_*/
+*.pt
+*.pth
+*.bin
+checkpoint-*/
+
+# Hugging Face cache
+.cache/
+transformers_cache/
+
+# Logs
+*.log
+logs/
+
+# Data cache
+data_cache/
+*.arrow
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
