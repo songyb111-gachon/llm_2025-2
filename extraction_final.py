@@ -167,7 +167,7 @@ def evaluate_perplexity(model, dataloader, device):
             total_tokens += num_tokens
     
     avg_loss = total_loss / total_tokens
-    perplexity = torch.exp(torch.tensor(avg_loss)).item()
+    perplexity = np.exp(avg_loss)
     
     return perplexity
 
